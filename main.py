@@ -2,6 +2,7 @@
 # Keterangan : Program ini mensimulasikan remote AC melalui CLI
 
 import time
+import speech_recognition as sr
 import threading
 
 # Global Variabel
@@ -14,6 +15,24 @@ temperature_status = 23
 power_warning = ""
 
 # Fungsi dan Prosedur
+
+# Fungsi untuk menangkap input audio
+def get_audio_input():
+    recognizer = sr.Recognizer()
+    with sr.Microphone() as source:
+        print("Listening for command...")
+        try:
+            audio = recognizer.listen(source, timeout=5, phrase_time_limit=5)
+            command = recognizer.recognize_google(audio, language="id-ID")  # Menggunakan bahasa Indonesia
+            print(f"You said: {command}")
+            return command.lower()  # Kembalikan dalam huruf kecil untuk kemudahan perbandingan
+        except sr.UnknownValueError:
+            print("Sorry, I could not understand the audio.")
+        except sr.RequestError:
+            print("Failed to connect to the recognition service.")
+        except Exception as e:
+            print(f"Error: {e}")
+    return ""
 
 def power():
 	"""This function changes power to on/off based on user's command"""
@@ -243,24 +262,33 @@ def ask():
 	global timer_status
 	global temperature_status
 	
-	command = input("What do you want to change? ")
-	match command:
-		case "power":
-			power()
-		case "swing":
-			swing()
-		case "fan":
-			fan()
-		case "mode":
-			mode()
-		case "timer":
-			timer() 
-		case "temperature":
-			set_temperature()
-		case "exit":
-			return False
-	
-	return True
+# Ubah fungsi `ask()` untuk mendukung masukan audio
+def ask():
+    global power_status, swing_status, fan_status, mode_status, timer_status, temperature_status
+    
+    print("Say the command (e.g., 'power', 'swing', 'fan', 'mode', 'timer', 'temperature', or 'exit'):")
+    command = get_audio_input()  # Menggunakan input dari audio
+    if not command:  # Jika tidak ada masukan, gunakan fallback ke masukan teks
+        command = input("Or type your command: ").lower()
+    
+    match command:
+        case "power":
+            power()
+        case "swing":
+            swing()
+        case "fan":
+            fan()
+        case "mode":
+            mode()
+        case "timer":
+            timer()
+        case "temperature":
+            set_temperature()
+        case "keluar" | "exit":
+            return False  # Keluar dari loop
+        case _:
+            print("Command not recognized.")
+    return True
 
 while(True):
 	display()
